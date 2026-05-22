@@ -4,11 +4,36 @@ import { useState } from "react";
 function Signup() {
   const [showPassword, setShowPassword] = useState(false);
 
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [showPopup, setShowPopup] = useState(false);
 
   const navigate = useNavigate();
 
   function handleSignup() {
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+
+    const alreadyExist = users.find((user) => user.email === email);
+
+    if (alreadyExist) {
+      alert("Account already exists. Please Login.");
+      navigate("/login");
+      return;
+    }
+    const newUser = {
+      name,
+      email,
+      password,
+    };
+
+    users.push(newUser);
+
+    localStorage.setItem("users", JSON.stringify(users));
+
+    localStorage.setItem("currentUser", JSON.stringify(newUser));
+
     setShowPopup(true);
 
     setTimeout(() => {
@@ -80,8 +105,9 @@ items-center
           </div>
 
           <h1 className="text-6xl font-bold leading-tight">
-            Join The Future Of<span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-               AI Learning
+            Join The Future Of
+            <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+              AI Learning
             </span>
           </h1>
 
@@ -160,12 +186,16 @@ shadow-2xl
           <form className="mt-8 space-y-5">
             <input
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Full Name"
               className="w-full bg-black/30 border border-gray-700 rounded-xl px-5 py-4 outline-none focus:border-blue-500"
             />
 
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
               className="w-full bg-black/30 border border-gray-700 rounded-xl px-5 py-4 outline-none focus:border-purple-500"
             />
@@ -173,6 +203,8 @@ shadow-2xl
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full bg-black/30 border border-gray-700 rounded-xl px-5 py-4 outline-none focus:border-pink-500"
               />

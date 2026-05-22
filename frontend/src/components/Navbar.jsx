@@ -1,23 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  useEffect(() => {
+    const currentUser = localStorage.getItem("currentUser");
+
+    if (currentUser) {
+      setUser(JSON.parse(currentUser));
+    }
+  }, []);
 
   const navLinks = [
     {
       name: "Features",
-      path: "#features",
+      path: "/#features",
     },
 
     {
       name: "How It Works",
-      path: "#how",
+      path: "/#how",
     },
 
     {
       name: "History",
-      path: "#history",
+      path: "/#history",
     },
   ];
 
@@ -46,8 +57,15 @@ items-center
       >
         {/* Logo */}
 
-        <a
-          href="#home"
+        <Link
+          to="/"
+          onClick={() => {
+            window.scrollTo({
+              top: 0,
+
+              behavior: "smooth",
+            });
+          }}
           className="
 flex
 items-center
@@ -105,7 +123,7 @@ text-xs
               AI Audio Platform
             </p>
           </div>
-        </a>
+        </Link>
 
         {/* Desktop */}
 
@@ -146,20 +164,108 @@ group-hover:w-full
             </a>
           ))}
         </div>
-
         {/* Right */}
 
-        <div
-          className="
-hidden
-lg:flex
+        <div className="hidden lg:flex items-center gap-4">
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="
+bg-white/5
+border
+border-gray-700
+px-5
+py-3
+rounded-xl
+flex
 items-center
-gap-4
+gap-3
+hover:border-blue-500
+duration-300
 "
-        >
-          <Link to="/login">
-            <button
-              className="
+              >
+                👤
+                <span>{user.name}</span>⌄
+              </button>
+
+              {profileOpen && (
+                <div
+                  className="
+absolute
+top-16
+right-0
+w-56
+bg-gray-900
+border
+border-gray-800
+rounded-2xl
+p-3
+shadow-2xl
+"
+                >
+                  <Link
+                    to="/dashboard"
+                    onClick={() => {
+                      window.scrollTo({
+                        top: 0,
+
+                        behavior: "smooth",
+                      });
+                    }}
+                    className="
+block
+px-4
+py-3
+rounded-xl
+hover:bg-white/5
+duration-300
+"
+                  >
+                    📊 Dashboard
+                  </Link>
+
+                  <button
+                    className="
+w-full
+text-left
+px-4
+py-3
+rounded-xl
+hover:bg-white/5
+duration-300
+"
+                  >
+                    👤 Profile
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("currentUser");
+
+                      window.location.reload();
+                    }}
+                    className="
+w-full
+text-left
+px-4
+py-3
+rounded-xl
+text-red-400
+hover:bg-red-500/10
+duration-300
+"
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <button
+                  className="
 group
 relative
 overflow-hidden
@@ -175,14 +281,14 @@ duration-300
 hover:border-blue-500
 hover:-translate-y-1
 "
-            >
-              🔐 Login
-            </button>
-          </Link>
+                >
+                  🔐 Login
+                </button>
+              </Link>
 
-          <Link to="/dashboard">
-            <button
-              className="
+              <Link to="/dashboard">
+                <button
+                  className="
 bg-gradient-to-r
 from-blue-600
 to-purple-600
@@ -193,10 +299,12 @@ font-semibold
 hover:scale-105
 duration-300
 "
-            >
-              Start Free
-            </button>
-          </Link>
+                >
+                  Start Free
+                </button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile */}
