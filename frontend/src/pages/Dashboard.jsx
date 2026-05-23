@@ -2,22 +2,26 @@ import UploadPDF from "../components/UploadPDF";
 import Navbar from "../components/Navbar";
 
 function Dashboard() {
-  const history = [
-    {
-      title: "Machine Learning Notes",
-      time: "2 min ago",
-    },
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-    {
-      title: "Operating System Guide",
-      time: "15 min ago",
-    },
+  const history = currentUser
+    ? [
+        {
+          title: "Machine Learning Notes",
+          time: "2 min ago",
+        },
 
-    {
-      title: "DBMS Revision",
-      time: "30 min ago",
-    },
-  ];
+        {
+          title: "Operating System Guide",
+          time: "15 min ago",
+        },
+
+        {
+          title: "DBMS Revision",
+          time: "30 min ago",
+        },
+      ]
+    : [];
 
   return (
     <div
@@ -211,9 +215,9 @@ gap-8
 "
         >
           {/* HISTORY */}
-
-          <div
-            className="
+          {history.length > 0 && (
+            <div
+              className="
 lg:col-span-2
 bg-gray-900
 border
@@ -221,26 +225,21 @@ border-gray-800
 rounded-3xl
 p-8
 "
-          >
-            <h2
-              className="
+            >
+              <h2
+                className="
 text-3xl
 font-bold
 mb-8
 "
-            >
-              Recent History
-            </h2>
-
-            <div
-              className="
-space-y-5
-"
-            >
-              {history.map((item, index) => (
-                <div
-                  key={index}
-                  className="
+              >
+                Recent History
+              </h2>
+              <div className="space-y-5">
+                {history.map((item, index) => (
+                  <div
+                    key={index}
+                    className="
 bg-black
 border
 border-gray-800
@@ -250,23 +249,23 @@ flex
 justify-between
 items-center
 "
-                >
-                  <div>
-                    <p>🎧 {item.title}</p>
+                  >
+                    <div>
+                      <p>🎧 {item.title}</p>
 
-                    <p
-                      className="
+                      <p
+                        className="
 text-gray-500
 text-sm
 mt-2
 "
-                    >
-                      {item.time}
-                    </p>
-                  </div>
+                      >
+                        {item.time}
+                      </p>
+                    </div>
 
-                  <button
-                    className="
+                    <button
+                      className="
 bg-blue-600
 px-4
 py-2
@@ -274,13 +273,14 @@ rounded-lg
 hover:bg-blue-700
 duration-300
 "
-                  >
-                    Open
-                  </button>
-                </div>
-              ))}
+                    >
+                      Open
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* AI STATUS */}
 

@@ -2,13 +2,38 @@ import { useState } from "react";
 
 function UploadPDF() {
   const [fileName, setFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
 
   function handleChange(e) {
     const file = e.target.files[0];
-
     if (file) {
       setFileName(file.name);
+      setSelectedFile(file);
     }
+  }
+  async function generatePodcast() {
+    console.log("Button Clicked");
+    if (!selectedFile) {
+      alert("Upload PDF First");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("pdf", selectedFile);
+    const response = await fetch(
+      "http://localhost:8000/api/generate",
+
+      {
+        method: "POST",
+
+        body: formData,
+      },
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    alert(data.message);
   }
 
   return (
@@ -106,13 +131,9 @@ mb-4
             ⬆️
           </div>
 
-          <p className="font-semibold text-lg">
-            Click To Upload PDF
-          </p>
+          <p className="font-semibold text-lg">Click To Upload PDF</p>
 
-          <p className="text-gray-500 mt-2">
-            Only PDF files supported
-          </p>
+          <p className="text-gray-500 mt-2">Only PDF files supported</p>
         </div>
       </label>
 
@@ -150,6 +171,8 @@ text-green-400
       )}
 
       <button
+        type="button"
+        onClick={generatePodcast}
         className="
 w-full
 mt-8
