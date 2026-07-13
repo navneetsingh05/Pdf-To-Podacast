@@ -1,10 +1,5 @@
 const fs = require("fs");
-
 const pdfParse = require("pdf-parse");
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 exports.generatePodcast = async (req, res) => {
   try {
@@ -17,31 +12,25 @@ exports.generatePodcast = async (req, res) => {
     console.log("API HIT");
 
     const pdfBuffer = fs.readFileSync(req.file.path);
-
     const pdfData = await pdfParse(pdfBuffer);
+    const pdfText = pdfData.text.trim();
 
-    const pdfText = pdfData.text;
+    // Clean up the uploaded file once we've read it
+    fs.unlink(req.file.path, () => {});
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-    });
-
-    const result = await model.generateContent(
-      `Convert these study notes into an engaging podcast conversation:
-
-${pdfText.substring(0, 12000)}`,
-    );
-
-    const podcastScript = result.response.text();
+    if (!pdfText) {
+      return res.status(422).json({
+        message:
+          "No readable text found in this PDF. It may be scanned/image-based.",
+      });
+    }
 
     res.json({
       success: true,
-
-      script: podcastScript,
+      script: pdfText,
     });
   } catch (error) {
     console.log(error);
-
     res.status(500).json({
       message: "Server Error",
     });

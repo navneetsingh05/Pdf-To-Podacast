@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 
 const podcastRoute = require("./routes/podcastRoute");
+const audioRoute = require("./routes/audioRoute");
 
 const app = express();
 
@@ -15,9 +16,10 @@ app.use(
   }),
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 app.use("/api", podcastRoute);
+app.use("/api", audioRoute);
 
 app.listen(8000, () => {
   console.log("Server Running On 8000");
