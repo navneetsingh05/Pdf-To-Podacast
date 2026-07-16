@@ -116,6 +116,10 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-app.listen(8000, () => {
-  console.log("Server Running On 8000");
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(8000, () => {
+    console.log("Server Running On 8000");
+  });
+}
+
+module.exports = app;
