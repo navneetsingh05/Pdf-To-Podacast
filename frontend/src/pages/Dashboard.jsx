@@ -1,27 +1,22 @@
 import UploadPDF from "../components/UploadPDF";
 import Navbar from "../components/Navbar";
+import { useState, useEffect } from "react";
 
 function Dashboard() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const [history, setHistory] = useState([]);
+  const [expandedItem, setExpandedItem] = useState(null);
 
-  const history = currentUser
-    ? [
-        {
-          title: "Machine Learning Notes",
-          time: "2 min ago",
-        },
+  function loadHistory() {
+    if (currentUser) {
+      const podcasts = JSON.parse(localStorage.getItem("podcasts")) || [];
+      setHistory(podcasts);
+    }
+  }
 
-        {
-          title: "Operating System Guide",
-          time: "15 min ago",
-        },
-
-        {
-          title: "DBMS Revision",
-          time: "30 min ago",
-        },
-      ]
-    : [];
+  useEffect(() => {
+    loadHistory();
+  }, [currentUser]);
 
   return (
     <div
@@ -200,7 +195,7 @@ p-8
 shadow-2xl
 "
             >
-              <UploadPDF />
+              <UploadPDF onSuccess={loadHistory} />
             </div>
           </div>
         </div>
@@ -237,9 +232,9 @@ mb-8
               </h2>
               <div className="space-y-5">
                 {history.map((item, index) => (
-                  <div
-                    key={index}
-                    className="
+                  <div key={index} className="flex flex-col gap-2">
+                    <div
+                      className="
 bg-black
 border
 border-gray-800
@@ -249,23 +244,24 @@ flex
 justify-between
 items-center
 "
-                  >
-                    <div>
-                      <p>🎧 {item.title}</p>
+                    >
+                      <div>
+                        <p>🎧 {item.title}</p>
 
-                      <p
-                        className="
+                        <p
+                          className="
 text-gray-500
 text-sm
 mt-2
 "
-                      >
-                        {item.time}
-                      </p>
-                    </div>
+                        >
+                          {item.time}
+                        </p>
+                      </div>
 
-                    <button
-                      className="
+                      <button
+                        onClick={() => setExpandedItem(expandedItem === index ? null : index)}
+                        className="
 bg-blue-600
 px-4
 py-2
@@ -273,9 +269,16 @@ rounded-lg
 hover:bg-blue-700
 duration-300
 "
-                    >
-                      Open
-                    </button>
+                      >
+                        {expandedItem === index ? "Close" : "Open"}
+                      </button>
+                    </div>
+                    {expandedItem === index && (
+                      <div className="bg-black/50 border border-gray-800 rounded-2xl p-5 text-gray-300 text-sm max-h-64 overflow-y-auto">
+                        <h4 className="font-semibold text-white mb-2">Podcast Script:</h4>
+                        <p className="whitespace-pre-wrap">{item.script || "No script available for this file."}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

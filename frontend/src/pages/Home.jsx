@@ -1,7 +1,9 @@
 import Navbar from "../components/Navbar";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [uploaded, setUploaded] = useState(false);
   const heroRef = useRef(null);
@@ -21,7 +23,7 @@ function Home() {
       border: "border-violet-500/20",
       accent: "text-violet-400",
       title: "AI Script Generation",
-      desc: "Claude AI converts dense PDF text into natural, engaging podcast dialogue.",
+      desc: "Gemini AI converts dense PDF text into natural, engaging podcast dialogue.",
     },
     {
       icon: "🎙️",
@@ -213,6 +215,7 @@ function Home() {
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 mb-14">
               <button
+                onClick={() => navigate("/dashboard")}
                 style={{
                   background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
                   border: "none",
@@ -237,6 +240,9 @@ function Home() {
                 Start for Free →
               </button>
               <button
+                onClick={() => {
+                  document.getElementById("how")?.scrollIntoView({ behavior: "smooth" });
+                }}
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.1)",
@@ -675,6 +681,7 @@ function Home() {
             </h2>
           </div>
           <button
+            onClick={() => navigate("/dashboard")}
             style={{
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -798,6 +805,7 @@ function Home() {
 
               {/* Open Button */}
               <button
+                onClick={() => navigate("/dashboard")}
                 style={{
                   background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
                   border: "none",
@@ -876,6 +884,7 @@ function Home() {
           </p>
 
           <button
+            onClick={() => navigate("/dashboard")}
             style={{
               background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
               border: "none",

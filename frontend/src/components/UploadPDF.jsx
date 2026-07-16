@@ -1,202 +1,61 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 
-const WORDS_PER_CHUNK = 200;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
 
-function chunkText(text, wordsPerChunk = WORDS_PER_CHUNK) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const chunks = [];
-  for (let i = 0; i < words.length; i += wordsPerChunk) {
-    chunks.push(words.slice(i, i + wordsPerChunk).join(" "));
-  }
-  return chunks;
-}
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "hi", label: "Hindi", flag: "🇮🇳" },
+  { code: "es", label: "Spanish", flag: "🇪🇸" },
+  { code: "fr", label: "French", flag: "🇫🇷" },
+  { code: "de", label: "German", flag: "🇩🇪" },
+  { code: "ja", label: "Japanese", flag: "🇯🇵" },
+  { code: "zh-CN", label: "Chinese", flag: "🇨🇳" },
+  { code: "ar", label: "Arabic", flag: "🇸🇦" },
+  { code: "pt", label: "Portuguese", flag: "🇧🇷" },
+  { code: "ru", label: "Russian", flag: "🇷🇺" },
+  { code: "ko", label: "Korean", flag: "🇰🇷" },
+  { code: "it", label: "Italian", flag: "🇮🇹" },
+  { code: "tr", label: "Turkish", flag: "🇹🇷" },
+  { code: "nl", label: "Dutch", flag: "🇳🇱" },
+  { code: "pl", label: "Polish", flag: "🇵🇱" },
+  { code: "sv", label: "Swedish", flag: "🇸🇪" },
+  { code: "id", label: "Indonesian", flag: "🇮🇩" },
+  { code: "th", label: "Thai", flag: "🇹🇭" },
+  { code: "bn", label: "Bengali", flag: "🇧🇩" },
+  { code: "mr", label: "Marathi", flag: "🇮🇳" },
+  { code: "ta", label: "Tamil", flag: "🇮🇳" },
+  { code: "te", label: "Telugu", flag: "🇮🇳" },
+  { code: "gu", label: "Gujarati", flag: "🇮🇳" },
+  { code: "ur", label: "Urdu", flag: "🇵🇰" },
+  { code: "uk", label: "Ukrainian", flag: "🇺🇦" },
+];
 
-function UploadPDF() {
+function UploadPDF({ onSuccess }) {
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState("");
   const [error, setError] = useState("");
   const [podcastScript, setPodcastScript] = useState("");
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [voices, setVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState(null);
-
-  const [downloading, setDownloading] = useState(false);
-
   const [targetLang, setTargetLang] = useState("en");
-  const [translatedScript, setTranslatedScript] = useState("");
-  const [translating, setTranslating] = useState(false);
 
-  const LANGUAGES = [
-    { code: "en", label: "English" },
-    { code: "hi", label: "Hindi" },
-    { code: "es", label: "Spanish" },
-    { code: "fr", label: "French" },
-    { code: "de", label: "German" },
-    { code: "ja", label: "Japanese" },
-    { code: "zh-CN", label: "Chinese (Simplified)" },
-    { code: "ar", label: "Arabic" },
-    { code: "pt", label: "Portuguese" },
-    { code: "ru", label: "Russian" },
-  ];
+  // Audio playback via backend TTS (works for all languages including Hindi)
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [speed, setSpeed] = useState(1); // 1 = normal speed
 
-  const chunksRef = useRef([]);
-  const chunkIndexRef = useRef(0);
-
+  // Cleanup audio URL on unmount
   useEffect(() => {
-    function loadVoices() {
-      const available = window.speechSynthesis.getVoices();
-      if (available.length) {
-        setVoices(available);
-        setSelectedVoice(
-          (prev) =>
-            available.find((v) =>
-              v.lang.toLowerCase().startsWith(targetLang.toLowerCase()),
-            ) ??
-            prev ??
-            available.find((v) => v.lang.startsWith("en")) ??
-            available[0],
-        );
-      }
-    }
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
     return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-      window.speechSynthesis.cancel();
+      if (audioUrl) window.URL.revokeObjectURL(audioUrl);
     };
-  }, [targetLang]);
-
-  const speakNextChunk = useCallback(() => {
-    const chunks = chunksRef.current;
-    const idx = chunkIndexRef.current;
-
-    if (idx >= chunks.length) {
-      setIsPlaying(false);
-      setProgress(100);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(chunks[idx]);
-    if (selectedVoice) utterance.voice = selectedVoice;
-
-    utterance.onend = () => {
-      chunkIndexRef.current += 1;
-      setProgress(Math.round((chunkIndexRef.current / chunks.length) * 100));
-      speakNextChunk();
-    };
-    utterance.onerror = () => setIsPlaying(false);
-
-    window.speechSynthesis.speak(utterance);
-  }, [selectedVoice]);
-
-  function playAudio() {
-    const text = getActiveScript();
-    if (!text) return;
-
-    window.speechSynthesis.cancel();
-    chunksRef.current = chunkText(text);
-    chunkIndexRef.current = 0;
-    setProgress(0);
-    setIsPlaying(true);
-    setIsPaused(false);
-    speakNextChunk();
-  }
-
-  function pauseAudio() {
-    window.speechSynthesis.pause();
-    setIsPaused(true);
-  }
-
-  function resumeAudio() {
-    window.speechSynthesis.resume();
-    setIsPaused(false);
-  }
-
-  function stopAudio() {
-    window.speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    setProgress(0);
-    chunkIndexRef.current = 0;
-  }
-
-  async function handleTranslate() {
-    if (!podcastScript) return;
-
-    if (targetLang === "en") {
-      setTranslatedScript("");
-      return;
-    }
-
-    setTranslating(true);
-    setError("");
-
-    try {
-      const response = await fetch("http://localhost:8000/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: podcastScript, targetLang }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setError(data.message || "Failed to translate");
-        return;
-      }
-
-      setTranslatedScript(data.translatedText);
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong while translating");
-    } finally {
-      setTranslating(false);
-    }
-  }
-
-  function getActiveScript() {
-    return targetLang !== "en" && translatedScript
-      ? translatedScript
-      : podcastScript;
-  }
-
-  async function downloadAudio() {
-    const scriptToUse = getActiveScript();
-    if (!scriptToUse) return;
-
-    setDownloading(true);
-    setError("");
-
-    try {
-      const response = await fetch("http://localhost:8000/api/audio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: scriptToUse, lang: targetLang }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate audio");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "podcast.mp3";
-      link.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to generate downloadable audio. Try again.");
-    } finally {
-      setDownloading(false);
-    }
-  }
+  }, [audioUrl]);
 
   function handleChange(e) {
     const file = e.target.files[0];
@@ -205,8 +64,22 @@ function UploadPDF() {
       setSelectedFile(file);
       setPodcastScript("");
       setError("");
-      stopAudio();
+      setAudioUrl(null);
+      setIsPlaying(false);
     }
+  }
+
+  async function fetchAudioBlob(text, lang) {
+    const response = await fetch(`${API_URL}/api/audio`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY 
+      },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!response.ok) throw new Error("Audio generation failed");
+    return await response.blob();
   }
 
   async function generatePodcast() {
@@ -217,352 +90,265 @@ function UploadPDF() {
 
     setError("");
     setPodcastScript("");
+    setAudioUrl(null);
+    setIsPlaying(false);
     setLoading(true);
+    setLoadingStep("generating");
 
     try {
+      // Step 1: Extract text + Gemini generates script directly in target language
       const formData = new FormData();
       formData.append("pdf", selectedFile);
+      formData.append("targetLang", targetLang); // Tell backend which language to use
 
-      const response = await fetch("http://localhost:8000/api/generate", {
+      const response = await fetch(`${API_URL}/api/generate`, {
         method: "POST",
+        headers: {
+          "x-api-key": API_KEY
+        },
         body: formData,
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        setError(data.message || "Failed to generate podcast");
-        return;
+        throw new Error(
+          data.message || "Failed to generate podcast. Please try a different PDF."
+        );
       }
 
-      setPodcastScript(data.script);
+      // Script is already in the selected language (Gemini handles it directly)
+      let finalScript = data.script;
+
+      setPodcastScript(finalScript);
+
+      // Step 3: Pre-generate audio via backend TTS
+      setLoadingStep("audio");
+      const blob = await fetchAudioBlob(finalScript, targetLang);
+      const url = window.URL.createObjectURL(blob);
+      setAudioUrl(url);
+
+      // Save to history
+      const newPodcast = {
+        title: selectedFile.name || "Unknown PDF",
+        time: new Date().toLocaleString(),
+        lang: targetLang,
+        langLabel: LANGUAGES.find((l) => l.code === targetLang)?.label || "English",
+        script: finalScript,
+      };
+      const podcasts = JSON.parse(localStorage.getItem("podcasts")) || [];
+      podcasts.unshift(newPodcast);
+      localStorage.setItem("podcasts", JSON.stringify(podcasts));
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
-      setError("Something went wrong while generating the podcast");
+      setError(
+        err.message ||
+          "Could not connect to server. Make sure the backend is running on port 8000."
+      );
     } finally {
       setLoading(false);
+      setLoadingStep("");
     }
   }
 
+  async function downloadAudio() {
+    if (!podcastScript) return;
+    setDownloading(true);
+    setError("");
+    try {
+      const blob = await fetchAudioBlob(podcastScript, targetLang);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const langLabel =
+        LANGUAGES.find((l) => l.code === targetLang)?.label || "en";
+      link.download = `podcast_${langLabel.toLowerCase()}.mp3`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to download audio. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  const selectedLangInfo = LANGUAGES.find((l) => l.code === targetLang);
+
+  const stepLabel = {
+    generating: targetLang !== "en"
+      ? `Generating & Translating to ${selectedLangInfo?.label}...`
+      : "Generating AI Script...",
+    audio: `Creating ${selectedLangInfo?.label} Audio...`,
+  };
+
   return (
-    <div
-      className="
-w-full
-max-w-xl
-bg-gradient-to-br
-from-gray-900
-to-black
-border
-border-gray-800
-rounded-3xl
-p-8
-shadow-2xl
-"
-    >
-      <div
-        className="
-text-center
-mb-8
-"
-      >
-        <div
-          className="
-w-20
-h-20
-mx-auto
-rounded-3xl
-bg-gradient-to-r
-from-blue-600
-to-purple-600
-flex
-items-center
-justify-center
-text-4xl
-mb-5
-"
-        >
-          📄
-        </div>
+    <div className="text-white">
+      <p className="text-center text-gray-400 text-sm mb-4">
+        Convert PDFs into AI Podcasts
+      </p>
 
-        <h2
-          className="
-text-3xl
-font-bold
-text-white
-"
-        >
-          Upload PDF
-        </h2>
-
-        <p
-          className="
-text-gray-400
-mt-3
-"
-        >
-          Convert PDFs into AI Podcasts
-        </p>
-      </div>
-
+      {/* Upload Zone */}
       <label
-        className="
-block
-border-2
-border-dashed
-border-gray-700
-hover:border-blue-500
-duration-300
-rounded-2xl
-p-10
-cursor-pointer
-bg-black/40
-"
+        htmlFor="pdf-upload"
+        className="block border-2 border-dashed border-blue-500/40 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-500/80 hover:bg-blue-500/5 transition-all duration-300 mb-4"
       >
+        <div className="text-5xl mb-3">⬆️</div>
+        <p className="font-semibold text-white">Click To Upload PDF</p>
+        <p className="text-gray-500 text-sm mt-1">Only PDF files supported</p>
         <input
+          id="pdf-upload"
           type="file"
           accept=".pdf"
           onChange={handleChange}
           className="hidden"
         />
-
-        <div
-          className="
-text-center
-"
-        >
-          <div
-            className="
-text-5xl
-mb-4
-"
-          >
-            ⬆️
-          </div>
-
-          <p className="font-semibold text-lg">Click To Upload PDF</p>
-
-          <p className="text-gray-500 mt-2">Only PDF files supported</p>
-        </div>
       </label>
 
+      {/* File name badge */}
       {fileName && (
-        <div
-          className="
-mt-6
-bg-black
-border
-border-gray-800
-rounded-xl
-p-4
-flex
-justify-between
-items-center
-"
-        >
-          <p
-            className="
-text-gray-300
-truncate
-"
-          >
-            📄 {fileName}
-          </p>
-
-          <span
-            className="
-text-green-400
-"
-          >
-            Ready
-          </span>
+        <div className="flex items-center justify-between bg-black/40 border border-gray-800 rounded-xl px-4 py-3 mb-4">
+          <span className="text-sm text-gray-300">📄 {fileName}</span>
+          <span className="text-green-400 text-sm font-semibold">Ready</span>
         </div>
       )}
 
+      {/* Language Selector */}
+      <div className="mb-4">
+        <label className="text-sm text-gray-400 mb-2 block">
+          🌐 Select Output Language
+        </label>
+        <select
+          value={targetLang}
+          onChange={(e) => {
+            setTargetLang(e.target.value);
+            setPodcastScript("");
+            setAudioUrl(null);
+            setIsPlaying(false);
+            setError("");
+          }}
+          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.flag} {l.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Generate Button */}
       <button
-        type="button"
         onClick={generatePodcast}
-        disabled={loading}
-        className="
-w-full
-mt-8
-bg-gradient-to-r
-from-blue-600
-to-purple-600
-py-4
-rounded-xl
-font-bold
-hover:scale-[1.02]
-duration-300
-disabled:opacity-50
-disabled:hover:scale-100
-"
+        disabled={loading || !selectedFile}
+        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-4 rounded-xl font-bold text-lg hover:scale-[1.02] duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
       >
-        {loading ? "Generating Podcast..." : "Generate Podcast 🎙️"}
+        {loading ? (
+          <span className="flex items-center justify-center gap-3">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+            {stepLabel[loadingStep] || "Processing..."}
+          </span>
+        ) : (
+          `Generate ${selectedLangInfo?.flag || "🎙️"} ${selectedLangInfo?.label || "English"} Podcast`
+        )}
       </button>
 
+      {/* Error */}
       {error && (
-        <div
-          className="
-mt-6
-bg-red-950/40
-border
-border-red-800
-rounded-xl
-p-4
-text-red-400
-"
-        >
-          {error}
+        <div className="mt-4 bg-red-950/40 border border-red-800 rounded-xl p-4 text-red-400 text-sm">
+          ⚠️ {error}
         </div>
       )}
 
-      {podcastScript && (
-        <div
-          className="
-mt-6
-bg-black
-border
-border-gray-800
-rounded-2xl
-p-6
-"
-        >
-          <p className="text-green-400 font-semibold mb-4">
-            🎧 Podcast script ready — press play to listen
-          </p>
+      {/* Audio Player — rendered once audioUrl is ready */}
+      {audioUrl && (
+        <div className="mt-6 bg-black/50 border border-gray-800 rounded-2xl p-5">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl">{selectedLangInfo?.flag}</span>
+            <div>
+              <p className="text-green-400 font-semibold text-sm">
+                ✅ Podcast ready in {selectedLangInfo?.label}!
+              </p>
+              <p className="text-gray-500 text-xs">
+                Press play to listen in {selectedLangInfo?.label}
+              </p>
+            </div>
+          </div>
 
-          <div className="flex gap-3 mb-4">
-            <select
-              value={targetLang}
+          {/* Speed Control */}
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs text-gray-400">🐢 Speed</label>
+              <span className="text-xs font-bold text-blue-400">{speed}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.05"
+              value={speed}
               onChange={(e) => {
-                setTargetLang(e.target.value);
-                setTranslatedScript("");
+                const val = parseFloat(e.target.value);
+                setSpeed(val);
+                if (audioRef.current) audioRef.current.playbackRate = val;
               }}
-              className="
-flex-1
-bg-gray-900
-border
-border-gray-700
-rounded-lg
-p-2
-text-gray-300
-"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-
-            {targetLang !== "en" && (
-              <button
-                onClick={handleTranslate}
-                disabled={translating}
-                className="
-bg-purple-600
-hover:bg-purple-700
-duration-300
-px-4
-rounded-lg
-font-semibold
-disabled:opacity-50
-"
-              >
-                {translating
-                  ? "Translating..."
-                  : translatedScript
-                    ? "Re-translate"
-                    : "Translate"}
-              </button>
-            )}
+              className="w-full accent-blue-500 cursor-pointer"
+            />
+            <div className="flex justify-between text-xs text-gray-600 mt-0.5">
+              <span>0.5x Slow</span>
+              <span>1x Normal</span>
+              <span>2x Fast</span>
+            </div>
           </div>
 
-          <select
-            value={selectedVoice?.name ?? ""}
-            onChange={(e) =>
-              setSelectedVoice(
-                voices.find((v) => v.name === e.target.value) || null,
-              )
-            }
-            className="
-w-full
-bg-gray-900
-border
-border-gray-700
-rounded-lg
-p-2
-text-gray-300
-mb-4
-"
-          >
-            {voices.map((v) => (
-              <option key={v.name} value={v.name}>
-                {v.name} ({v.lang})
-              </option>
-            ))}
-          </select>
+          {/* Native HTML5 audio player — works for ALL languages */}
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            controls
+            onPlay={() => {
+              setIsPlaying(true);
+              if (audioRef.current) audioRef.current.playbackRate = speed;
+            }}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => setIsPlaying(false)}
+            className="w-full rounded-lg mb-4"
+            style={{ accentColor: "#6366f1" }}
+          />
 
-          <div className="flex gap-3">
-            {!isPlaying && (
-              <button
-                onClick={playAudio}
-                disabled={targetLang !== "en" && !translatedScript}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 duration-300 py-3 rounded-xl font-semibold disabled:opacity-50"
-              >
-                ▶ Play
-              </button>
-            )}
-            {isPlaying && !isPaused && (
-              <button
-                onClick={pauseAudio}
-                className="flex-1 bg-yellow-600 hover:bg-yellow-700 duration-300 py-3 rounded-xl font-semibold"
-              >
-                ⏸ Pause
-              </button>
-            )}
-            {isPlaying && isPaused && (
-              <button
-                onClick={resumeAudio}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 duration-300 py-3 rounded-xl font-semibold"
-              >
-                ▶ Resume
-              </button>
-            )}
-            {isPlaying && (
-              <button
-                onClick={stopAudio}
-                className="flex-1 bg-red-600 hover:bg-red-700 duration-300 py-3 rounded-xl font-semibold"
-              >
-                ⏹ Stop
-              </button>
-            )}
-          </div>
-
+          {/* Download Button */}
           <button
             onClick={downloadAudio}
-            disabled={downloading || (targetLang !== "en" && !translatedScript)}
-            className="
-w-full
-mt-3
-bg-gray-800
-hover:bg-gray-700
-duration-300
-py-3
-rounded-xl
-font-semibold
-disabled:opacity-50
-"
+            disabled={downloading}
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 duration-300 py-3 rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {downloading ? "Preparing MP3..." : "⬇ Download Audio"}
+            {downloading ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Preparing MP3...
+              </>
+            ) : (
+              `⬇ Download ${selectedLangInfo?.label} Audio`
+            )}
           </button>
 
-          <div className="mt-4 bg-gray-800 rounded-full h-2">
-            <div
-              className="bg-purple-500 h-2 rounded-full duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {/* Script preview */}
+          <details className="mt-4">
+            <summary className="text-gray-500 text-xs cursor-pointer hover:text-gray-300 transition-colors">
+              📄 View Script
+            </summary>
+            <p className="mt-2 text-gray-400 text-xs leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap border-t border-gray-800 pt-2">
+              {podcastScript}
+            </p>
+          </details>
         </div>
       )}
     </div>

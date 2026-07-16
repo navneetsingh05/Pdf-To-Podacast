@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useGoogleLogin } from "@react-oauth/google";
 
 function Signup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -41,9 +42,42 @@ function Signup() {
     }, 2000);
   }
 
-  function handleGoogleSignup() {
-    navigate("/dashboard");
-  }
+  const handleGoogleSignup = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Fetch real user info from Google using the access token
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const userInfo = await res.json();
+
+        const googleUser = {
+          name: userInfo.name,
+          email: userInfo.email,
+          avatar: userInfo.picture,
+          provider: "google",
+        };
+
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        const alreadyExist = users.find((u) => u.email === googleUser.email);
+        if (!alreadyExist) {
+          users.push(googleUser);
+          localStorage.setItem("users", JSON.stringify(users));
+        }
+
+        localStorage.setItem("currentUser", JSON.stringify(googleUser));
+        setShowPopup(true);
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      } catch (err) {
+        alert("Google login failed. Please try again.");
+      }
+    },
+    onError: () => {
+      alert("Google login failed. Please try again.");
+    },
+  });
 
   return (
     <div
@@ -245,7 +279,13 @@ hover:bg-white/10
 duration-300
 "
             >
-              🌐 Continue With Google
+              <svg width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.3 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6C12.4 13.6 17.8 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.8 37.5 46.5 31.4 46.5 24.5z"/>
+                <path fill="#FBBC05" d="M10.6 28.5c-.5-1.5-.8-3-.8-4.5s.3-3 .8-4.5l-7.8-6C1 16.3 0 20 0 24s1 7.7 2.8 10.5l7.8-6z"/>
+                <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.3-7.7 2.3-6.2 0-11.5-4.2-13.4-9.8l-7.8 6C6.7 42.5 14.7 48 24 48z"/>
+              </svg>
+              Continue With Google
             </button>
           </form>
 

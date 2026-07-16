@@ -12,16 +12,28 @@
   "type": "commonjs",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@vitalets/google-translate-api": "^9.2.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.5.2",
+    "file-type": "^16.5.4",
     "fs": "^0.0.1-security",
     "google-tts-api": "^2.0.2",
+    "helmet": "^8.3.0",
+    "hpp": "^0.2.3",
     "mongoose": "^9.6.2",
     "multer": "^2.2.0",
-    "pdf-parse": "^1.1.4"
+    "pdf-parse": "^1.1.4",
+    "pdf2json": "^4.0.3",
+    "pdfjs-dist": "^6.1.200",
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "overrides": {
+    "axios": "^1.7.9"
   }
 }

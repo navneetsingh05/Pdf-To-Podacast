@@ -1,4 +1,7 @@
 const gtts = require("google-tts-api");
+const { ALLOWED_LANGS } = require("../middleware/validate");
+
+const MAX_TEXT_LENGTH = 50_000;
 
 // Google's TTS endpoint caps out around 200 characters per request,
 // so we split the script into safe chunks and stitch the resulting
@@ -29,10 +32,10 @@ function splitIntoChunks(text, maxLen = 200) {
 const BATCH_SIZE = 5; // concurrent requests per batch
 const MAX_RETRIES = 2;
 
-async function fetchChunkAudio(chunk, attempt = 0) {
+async function fetchChunkAudio(chunk, lang = "en", attempt = 0) {
   try {
     const url = gtts.getAudioUrl(chunk, {
-      lang: "en",
+      lang: lang,
       slow: false,
       host: "https://translate.google.com",
     });
@@ -45,7 +48,7 @@ async function fetchChunkAudio(chunk, attempt = 0) {
   } catch (err) {
     if (attempt < MAX_RETRIES) {
       await new Promise((r) => setTimeout(r, 300 * (attempt + 1))); // small backoff
-      return fetchChunkAudio(chunk, attempt + 1);
+      return fetchChunkAudio(chunk, lang, attempt + 1);
     }
     throw err;
   }
@@ -53,20 +56,33 @@ async function fetchChunkAudio(chunk, attempt = 0) {
 
 exports.generateAudio = async (req, res) => {
   try {
-    let { text } = req.body;
+    let { text, lang } = req.body;
 
     if (!text || !text.trim()) {
-      return res.status(400).json({ message: "Text required" });
+      return res.status(400).json({ success: false, message: "Text required" });
+    }
+
+    // Sanitize lang — fall back to English if not in whitelist
+    if (!lang || !ALLOWED_LANGS.has(lang)) {
+      lang = "en";
     }
 
     text = text.trim();
+
+    // Hard cap: reject oversized text
+    if (text.length > MAX_TEXT_LENGTH) {
+      return res.status(413).json({
+        success: false,
+        message: `Text too long. Maximum ${MAX_TEXT_LENGTH} characters allowed.`,
+      });
+    }
     const chunks = splitIntoChunks(text);
     const audioBuffers = [];
 
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       const batch = chunks.slice(i, i + BATCH_SIZE);
       const batchBuffers = await Promise.all(
-        batch.map((chunk) => fetchChunkAudio(chunk)),
+        batch.map((chunk) => fetchChunkAudio(chunk, lang || "en")),
       );
       audioBuffers.push(...batchBuffers);
     }
@@ -79,12 +95,11 @@ exports.generateAudio = async (req, res) => {
     });
     res.send(finalBuffer);
   } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({
-        message:
-          "Failed to generate downloadable audio. Try again — the free TTS service may be temporarily busy.",
-      });
+    console.error("[audio] TTS error:", error.message);
+    res.status(500).json({
+      success: false,
+      message:
+        "Failed to generate audio. The TTS service may be temporarily busy — please try again.",
+    });
   }
 };
