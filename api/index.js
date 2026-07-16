@@ -6,7 +6,6 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
-const hpp = require("hpp");
 
 const podcastRoute = require("./routes/podcastRoute");
 const audioRoute = require("./routes/audioRoute");
@@ -80,9 +79,6 @@ app.use(mongoSanitize());
 
 // Data sanitization against XSS
 app.use(xss());
-
-// Prevent parameter pollution
-app.use(hpp());
 
 // ─── API Key Authentication ──────────────────────────────────────────────────
 app.use((req, res, next) => {
