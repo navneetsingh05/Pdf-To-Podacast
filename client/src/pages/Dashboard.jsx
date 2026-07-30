@@ -23,6 +23,14 @@ function Dashboard() {
   function loadHistory() {
     const podcasts = JSON.parse(localStorage.getItem("podcasts")) || [];
     setHistory(podcasts);
+    return podcasts;
+  }
+
+  function handleUploadSuccess() {
+    const podcasts = JSON.parse(localStorage.getItem("podcasts")) || [];
+    setHistory(podcasts);
+    setActiveTab("library");
+    window.scrollTo({ top: 200, behavior: "smooth" });
   }
 
   function deleteItem(index) {
@@ -132,7 +140,7 @@ function Dashboard() {
                     <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Upload a PDF and let AI do the rest</p>
                   </div>
                 </div>
-                <UploadPDF onSuccess={() => { loadHistory(); setActiveTab("library"); }} />
+                <UploadPDF onSuccess={handleUploadSuccess} />
               </div>
 
               {/* Quick Tips */}

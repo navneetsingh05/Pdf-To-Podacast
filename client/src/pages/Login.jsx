@@ -81,23 +81,11 @@ function Login() {
   });
 
   function handleForgotPassword() {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
     if (!email) {
-      alert("Enter Email First");
-
+      alert("Please enter your email address first, then click Forgot Password.");
       return;
     }
-
-    const foundUser = users.find((user) => user.email === email);
-
-    if (!foundUser) {
-      alert("No Account Found");
-
-      return;
-    }
-
-    alert(`Your Password: ${foundUser.password}`);
+    alert(`A password reset link would be sent to: ${email}\n\n(Password reset via email is coming soon!)`);
   }
 
   return (
