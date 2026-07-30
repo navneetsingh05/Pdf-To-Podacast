@@ -63,8 +63,8 @@ function Navbar() {
   ];
 
   const authLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: "📊" },
-    { name: "My Podcasts", href: "/dashboard#library", icon: "🎧" },
+    { name: "Dashboard", href: "/dashboard?tab=analytics", icon: "📊" },
+    { name: "My Podcasts", href: "/dashboard?tab=library", icon: "🎧" },
   ];
 
   const notifications = [
@@ -190,7 +190,7 @@ function Navbar() {
               <>
                 {/* New Podcast button */}
                 <button
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() => navigate("/dashboard?tab=create")}
                   style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 0 20px rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 0 30px rgba(99,102,241,0.5)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.3)"; }}
@@ -282,9 +282,9 @@ function Navbar() {
                       {/* Menu items */}
                       <div style={{ padding: "8px" }}>
                         {[
-                          { icon: "📊", label: "Dashboard", sub: "Your workspace", action: () => navigate("/dashboard") },
-                          { icon: "🎧", label: "My Library", sub: "All your podcasts", action: () => navigate("/dashboard") },
-                          { icon: "⚡", label: "New Podcast", sub: "Upload & convert PDF", action: () => navigate("/dashboard") },
+                          { icon: "📊", label: "Dashboard", sub: "Your workspace", action: () => navigate("/dashboard?tab=analytics") },
+                          { icon: "🎧", label: "My Library", sub: "All your podcasts", action: () => navigate("/dashboard?tab=library") },
+                          { icon: "⚡", label: "New Podcast", sub: "Upload & convert PDF", action: () => navigate("/dashboard?tab=create") },
                         ].map((item, i) => (
                           <button key={i} onClick={() => { setProfileOpen(false); item.action(); }}
                             style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 11, background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "rgba(255,255,255,0.7)", transition: "all 0.15s" }}

@@ -1,7 +1,7 @@
 import UploadPDF from "../components/UploadPDF";
 import Navbar from "../components/Navbar";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
@@ -11,7 +11,16 @@ function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [history, setHistory] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("create");
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && ["create", "library", "analytics"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
   const [audioUrls, setAudioUrls] = useState({});
   const [loadingAudioIndex, setLoadingAudioIndex] = useState(null);
 
