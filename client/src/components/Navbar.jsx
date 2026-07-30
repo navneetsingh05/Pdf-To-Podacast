@@ -345,7 +345,13 @@ function Navbar() {
           <div style={{ background: "rgba(8,8,16,0.98)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.07)", padding: "16px 20px 20px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {(user ? authLinks : guestLinks).map((item, i) => (
-                <a key={i} href={item.href} onClick={() => setMenuOpen(false)}
+                <a key={i} href={item.href} onClick={(e) => {
+                  setMenuOpen(false);
+                  if (!item.href.includes("#")) {
+                    e.preventDefault();
+                    navigate(item.href);
+                  }
+                }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.75)", textDecoration: "none", fontSize: 15, fontWeight: 500 }}
                 >
                   {item.icon && <span>{item.icon}</span>}
