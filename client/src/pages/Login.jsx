@@ -13,7 +13,9 @@ function Login() {
 
   const navigate = useNavigate();
 
-  async function handleLogin() {
+  async function handleLogin(e) {
+    if (e) e.preventDefault();
+
     if (!email || !password) {
       alert("Please enter both email and password.");
       return;
@@ -144,7 +146,7 @@ function Login() {
             <p className="text-gray-400 mt-3">Login to continue</p>
           </div>
 
-          <form className="mt-8 space-y-5">
+          <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <input
               type="email"
               value={email}
@@ -182,8 +184,7 @@ function Login() {
             </div>
 
             <button
-              type="button"
-              onClick={handleLogin}
+              type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-4 rounded-xl font-bold hover:scale-[1.02] duration-300"
             >
               Login

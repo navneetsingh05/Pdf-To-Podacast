@@ -15,7 +15,9 @@ function Signup() {
 
   const navigate = useNavigate();
 
-  async function handleSignup() {
+  async function handleSignup(e) {
+    if (e) e.preventDefault();
+
     if (!name || !email || !password) {
       alert("Please fill in all fields.");
       return;
@@ -227,7 +229,7 @@ shadow-2xl
             <p className="text-gray-400 mt-3">Start your AI journey today</p>
           </div>
 
-          <form className="mt-8 space-y-5">
+          <form onSubmit={handleSignup} className="mt-8 space-y-5">
             <input
               type="text"
               value={name}
@@ -263,8 +265,7 @@ shadow-2xl
             </div>
 
             <button
-              type="button"
-              onClick={handleSignup}
+              type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-4 rounded-xl font-bold hover:scale-[1.02] duration-300"
             >
               Create Account

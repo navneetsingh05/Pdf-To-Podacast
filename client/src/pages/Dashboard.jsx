@@ -3,12 +3,17 @@ import Navbar from "../components/Navbar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
+
 function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [history, setHistory] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
   const [activeTab, setActiveTab] = useState("create");
+  const [audioUrls, setAudioUrls] = useState({});
+  const [loadingAudioIndex, setLoadingAudioIndex] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -37,6 +42,38 @@ function Dashboard() {
     const updated = history.filter((_, i) => i !== index);
     setHistory(updated);
     localStorage.setItem("podcasts", JSON.stringify(updated));
+    
+    // cleanup object urls
+    if (audioUrls[index]) {
+      window.URL.revokeObjectURL(audioUrls[index]);
+      const newUrls = { ...audioUrls };
+      delete newUrls[index];
+      setAudioUrls(newUrls);
+    }
+  }
+
+  async function fetchAudioBlob(text, lang) {
+    const response = await fetch(`${API_URL}/api/audio`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!response.ok) throw new Error("Audio generation failed");
+    return await response.blob();
+  }
+
+  async function handlePlayAudio(index, script, lang) {
+    if (audioUrls[index]) return;
+    setLoadingAudioIndex(index);
+    try {
+      const blob = await fetchAudioBlob(script, lang || "en");
+      const url = window.URL.createObjectURL(blob);
+      setAudioUrls((prev) => ({ ...prev, [index]: url }));
+    } catch (err) {
+      alert("Failed to load audio. Make sure backend is running.");
+    } finally {
+      setLoadingAudioIndex(null);
+    }
   }
 
   const initials = currentUser?.name
@@ -221,8 +258,28 @@ function Dashboard() {
                     {/* Expanded script view */}
                     {expandedItem === index && (
                       <div style={{ background: "rgba(8,8,16,0.9)", border: "1px solid rgba(99,102,241,0.2)", borderTop: "none", borderRadius: "0 0 18px 18px", padding: "20px 22px", marginTop: -2 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                           <span style={{ fontSize: 14, color: "#a5b4fc", fontWeight: 700 }}>📝 Podcast Script</span>
+                          
+                          {audioUrls[index] ? (
+                            <audio src={audioUrls[index]} controls autoPlay style={{ height: 34, accentColor: "#6366f1", flex: 1, minWidth: 200, maxWidth: 400 }} />
+                          ) : (
+                            <button
+                              onClick={() => handlePlayAudio(index, item.script, item.lang)}
+                              disabled={loadingAudioIndex === index || !item.script}
+                              style={{ padding: "8px 16px", borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontSize: 13, fontWeight: 600, cursor: (loadingAudioIndex === index || !item.script) ? "not-allowed" : "pointer", opacity: (loadingAudioIndex === index || !item.script) ? 0.7 : 1, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 0 15px rgba(99,102,241,0.3)" }}
+                            >
+                              {loadingAudioIndex === index ? (
+                                <>
+                                  <svg style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} viewBox="0 0 24 24" fill="none">
+                                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                  </svg>
+                                  Loading Audio...
+                                </>
+                              ) : "▶ Listen to Audio"}
+                            </button>
+                          )}
                         </div>
                         <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 280, overflowY: "auto" }}>
                           {item.script || "No script content saved for this podcast."}
@@ -319,6 +376,7 @@ function Dashboard() {
       {/* Inline keyframes */}
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
