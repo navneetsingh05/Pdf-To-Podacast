@@ -232,6 +232,8 @@ shadow-2xl
           <form onSubmit={handleSignup} className="mt-8 space-y-5">
             <input
               type="text"
+              name="name"
+              autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Full Name"
@@ -240,6 +242,8 @@ shadow-2xl
 
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
@@ -249,6 +253,8 @@ shadow-2xl
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
