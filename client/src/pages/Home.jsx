@@ -109,7 +109,7 @@ function Home() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080810", color: "#fff", overflowX: "hidden", fontFamily: "'Inter', 'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#080810", color: "#fff", fontFamily: "'Inter', 'DM Sans', sans-serif" }}>
 
       {/* ── Ambient Background ── */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
