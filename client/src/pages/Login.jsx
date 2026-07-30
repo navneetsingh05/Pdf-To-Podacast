@@ -52,12 +52,7 @@ function Login() {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const userInfo = await res.json();
-
-        // Send Google user data to our backend
+        // Send Google access token directly to our backend for secure verification
         const backendRes = await fetch(`${API_URL}/api/auth/google`, {
           method: "POST",
           headers: {
@@ -65,9 +60,7 @@ function Login() {
             "x-api-key": API_KEY,
           },
           body: JSON.stringify({
-            name: userInfo.name,
-            email: userInfo.email,
-            avatar: userInfo.picture,
+            token: tokenResponse.access_token,
           }),
         });
 

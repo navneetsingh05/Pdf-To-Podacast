@@ -184,9 +184,25 @@ const resetPassword = async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleAuth = async (req, res) => {
-  const { name, email, avatar } = req.body;
+  const { token } = req.body;
 
   try {
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Google access token is required" });
+    }
+
+    // Verify the token with Google directly to prevent spoofing
+    const googleRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!googleRes.ok) {
+      return res.status(401).json({ success: false, message: "Invalid Google token" });
+    }
+
+    const userInfo = await googleRes.json();
+    const { email, name, picture } = userInfo;
+
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required from Google" });
     }
@@ -210,7 +226,7 @@ const googleAuth = async (req, res) => {
     user = await User.create({
       name: name || email.split("@")[0],
       email,
-      avatar: avatar || "",
+      avatar: picture || "",
       provider: "google",
     });
 
@@ -223,7 +239,8 @@ const googleAuth = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Google Auth Error:", error);
+    res.status(500).json({ success: false, message: "Server error during Google authentication" });
   }
 };
 

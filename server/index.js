@@ -5,6 +5,9 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
 
 const podcastRoute = require("./routes/podcastRoute");
 const audioRoute = require("./routes/audioRoute");
@@ -57,18 +60,45 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// ─── CORS ──────────────────────────────────────────────────────────────────
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
-
 // ─── Body Parsing ──────────────────────────────────────────────────────────
 // 1 MB limit — PDFs are sent as multipart, not JSON, so 1 MB is ample
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+
+// ─── Data Sanitization ─────────────────────────────────────────────────────
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent HTTP param pollution
+app.use(hpp());
+
+// ─── CORS ──────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "https://pdf-to-podacast.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
 
 // ─── API Key Authentication ──────────────────────────────────────────────────
 app.use((req, res, next) => {
