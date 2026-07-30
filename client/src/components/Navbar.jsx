@@ -130,7 +130,6 @@ function Navbar() {
           .nav-links-desktop { display: none !important; }
           .nav-right-desktop { display: none !important; }
           .nav-hamburger { display: flex !important; }
-          .nav-logo-sub { display: none; }
         }
       `}</style>
 
