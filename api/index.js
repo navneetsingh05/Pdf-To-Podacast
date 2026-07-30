@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -9,8 +10,29 @@ const xss = require("xss-clean");
 const podcastRoute = require("./routes/podcastRoute");
 const audioRoute = require("./routes/audioRoute");
 const translateRoute = require("./routes/translateRoute");
+const authRoute = require("./routes/authRoute");
 
 const app = express();
+
+// ─── Database Connection ───────────────────────────────────────────────────
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
+if (process.env.MONGO_URI) {
+  connectDB();
+} else {
+  console.warn("WARNING: MONGO_URI is missing from .env, skipping database connection.");
+}
+
 
 // ─── Security: HTTP Headers ────────────────────────────────────────────────
 app.set("trust proxy", 1); // Essential for HTTPS when deployed behind a proxy (Render/Vercel/Cloudflare)
@@ -88,6 +110,7 @@ app.use((req, res, next) => {
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────
+app.use("/api/auth", authRoute);
 app.use("/api", podcastRoute);
 app.use("/api", audioRoute);
 app.use("/api", translateRoute);

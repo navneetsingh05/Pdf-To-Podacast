@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -11,21 +13,38 @@ function Login() {
 
   const navigate = useNavigate();
 
-  function handleLogin() {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
-    const foundUser = users.find(
-      (user) => user.email === email && user.password === password,
-    );
-
-    if (!foundUser) {
-      alert("Invalid email or password");
-
+  async function handleLogin() {
+    if (!email || !password) {
+      alert("Please enter both email and password.");
       return;
     }
 
-    localStorage.setItem("currentUser", JSON.stringify(foundUser));
-    navigate("/dashboard");
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Invalid email or password");
+        return;
+      }
+
+      // Store JWT token and user securely in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("currentUser", JSON.stringify(data));
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Server error. Please make sure the backend is running.");
+    }
   }
 
   const handleGoogleLogin = useGoogleLogin({

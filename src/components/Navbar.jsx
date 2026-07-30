@@ -26,6 +26,7 @@ function Navbar() {
 
   function handleLogout() {
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("token");
     setUser(null);
     setProfileOpen(false);
     navigate("/login");

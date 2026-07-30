@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
 function Signup() {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -13,33 +15,41 @@ function Signup() {
 
   const navigate = useNavigate();
 
-  function handleSignup() {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
-    const alreadyExist = users.find((user) => user.email === email);
-
-    if (alreadyExist) {
-      alert("Account already exists. Please Login.");
-      navigate("/login");
+  async function handleSignup() {
+    if (!name || !email || !password) {
+      alert("Please fill in all fields.");
       return;
     }
-    const newUser = {
-      name,
-      email,
-      password,
-    };
 
-    users.push(newUser);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    localStorage.setItem("users", JSON.stringify(users));
+      const data = await res.json();
 
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
+      if (!res.ok || !data.success) {
+        alert(data.message || "Signup failed");
+        return;
+      }
 
-    setShowPopup(true);
+      // Store JWT token and user securely in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("currentUser", JSON.stringify(data));
 
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 2000);
+      setShowPopup(true);
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      alert("Server error. Please make sure the backend is running.");
+    }
   }
 
   const handleGoogleSignup = useGoogleLogin({
