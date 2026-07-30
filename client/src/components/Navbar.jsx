@@ -333,12 +333,12 @@ function Navbar() {
                 </Link>
               </>
             )}
-
-            {/* Hamburger */}
-            <button onClick={() => setMenuOpen(!menuOpen)} className="nav-hamburger">
-              {menuOpen ? "✕" : "☰"}
-            </button>
           </div>
+
+          {/* Hamburger */}
+          <button onClick={() => setMenuOpen(!menuOpen)} className="nav-hamburger">
+            {menuOpen ? "✕" : "☰"}
+          </button>
         </div>
 
         {/* ── Mobile Menu ── */}
