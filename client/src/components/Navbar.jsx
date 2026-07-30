@@ -32,11 +32,16 @@ function Navbar() {
     navigate("/login");
   }
 
-  const navLinks = [
-    { name: "Features", path: "/#features" },
-    { name: "How It Works", path: "/#how" },
-    { name: "History", path: "/#history" },
-  ];
+  const navLinks = user
+    ? [
+        { name: "Dashboard", path: "/dashboard" },
+        { name: "My Podcasts", path: "/dashboard" },
+      ]
+    : [
+        { name: "Features", path: "/#features" },
+        { name: "How It Works", path: "/#how" },
+        { name: "History", path: "/#history" },
+      ];
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)

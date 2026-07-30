@@ -6,6 +6,7 @@ function Home() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [uploaded, setUploaded] = useState(false);
+  const [user, setUser] = useState(null);
   const heroRef = useRef(null);
 
   const features = [
@@ -98,6 +99,10 @@ function Home() {
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % steps.length);
     }, 1800);
+    
+    const stored = localStorage.getItem("currentUser");
+    if (stored) setUser(JSON.parse(stored));
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -237,7 +242,7 @@ function Home() {
                   e.target.style.boxShadow = "0 0 32px rgba(99,102,241,0.35)";
                 }}
               >
-                Start for Free →
+                {user ? "Go to Dashboard →" : "Start for Free →"}
               </button>
               <button
                 onClick={() => {
