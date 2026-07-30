@@ -149,8 +149,9 @@ function Login() {
           <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <input
               type="email"
+              id="email"
               name="email"
-              autoComplete="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
@@ -160,6 +161,7 @@ function Login() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                id="password"
                 name="password"
                 autoComplete="current-password"
                 value={password}
