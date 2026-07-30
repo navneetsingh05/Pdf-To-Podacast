@@ -5,9 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
-const hpp = require("hpp");
+
 
 const podcastRoute = require("./routes/podcastRoute");
 const audioRoute = require("./routes/audioRoute");
@@ -66,14 +64,8 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
 // ─── Data Sanitization ─────────────────────────────────────────────────────
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
-
-// Data sanitization against XSS
-app.use(xss());
-
-// Prevent HTTP param pollution
-app.use(hpp());
+// Note: express-mongo-sanitize, xss-clean, and hpp were removed because 
+// they try to reassign req.query which is read-only in Express 5, causing 500 errors.
 
 // ─── CORS ──────────────────────────────────────────────────────────────────
 const allowedOrigins = [
