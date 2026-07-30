@@ -123,10 +123,11 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-if (process.env.NODE_ENV !== "production") {
-  app.listen(8000, () => {
-    console.log("Server Running On 8000");
-  });
-}
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  console.log(`Server Running On ${PORT}`);
+});
 
 module.exports = app;
+// Nodemon trigger restart (atlas 2)
