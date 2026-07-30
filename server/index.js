@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const xss = require("xss-clean");
 
 const podcastRoute = require("./routes/podcastRoute");
 const audioRoute = require("./routes/audioRoute");
@@ -93,9 +92,6 @@ app.use(
 // 1 MB limit — PDFs are sent as multipart, not JSON, so 1 MB is ample
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
-
-// Data sanitization against XSS
-app.use(xss());
 
 // ─── API Key Authentication ──────────────────────────────────────────────────
 app.use((req, res, next) => {
