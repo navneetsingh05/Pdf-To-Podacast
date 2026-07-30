@@ -8,19 +8,11 @@ const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-20
 
 function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [history, setHistory] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
-  const location = useLocation();
   const [activeTab, setActiveTab] = useState("create");
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get("tab");
-    if (tab && ["create", "library", "analytics"].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [location.search]);
   const [audioUrls, setAudioUrls] = useState({});
   const [loadingAudioIndex, setLoadingAudioIndex] = useState(null);
 
@@ -33,6 +25,14 @@ function Dashboard() {
     setCurrentUser(JSON.parse(stored));
     loadHistory();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && ["create", "library", "analytics"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   function loadHistory() {
     const podcasts = JSON.parse(localStorage.getItem("podcasts")) || [];
@@ -48,11 +48,11 @@ function Dashboard() {
   }
 
   function deleteItem(index) {
+    if(!window.confirm("Are you sure you want to delete this podcast?")) return;
     const updated = history.filter((_, i) => i !== index);
     setHistory(updated);
     localStorage.setItem("podcasts", JSON.stringify(updated));
     
-    // cleanup object urls
     if (audioUrls[index]) {
       window.URL.revokeObjectURL(audioUrls[index]);
       const newUrls = { ...audioUrls };
@@ -90,10 +90,10 @@ function Dashboard() {
     : "U";
 
   const stats = [
-    { label: "Total Podcasts", val: history.length.toString(), icon: "🎧", color: "#6366f1", bg: "rgba(99,102,241,0.1)" },
-    { label: "This Week", val: "3", icon: "📈", color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
-    { label: "Audio Minutes", val: String(history.length * 12), icon: "⏱️", color: "#34d399", bg: "rgba(52,211,153,0.1)" },
-    { label: "AI Accuracy", val: "99%", icon: "🤖", color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
+    { label: "Total Podcasts", val: history.length.toString(), icon: "🎧", color: "#818cf8", bg: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.02))" },
+    { label: "This Week", val: "3", icon: "📈", color: "#c084fc", bg: "linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.02))" },
+    { label: "Audio Minutes", val: String(history.length * 12), icon: "⏱️", color: "#34d399", bg: "linear-gradient(135deg, rgba(52,211,153,0.15), rgba(52,211,153,0.02))" },
+    { label: "AI Accuracy", val: "99%", icon: "🤖", color: "#60a5fa", bg: "linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.02))" },
   ];
 
   const tabs = [
@@ -103,290 +103,282 @@ function Dashboard() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080810", color: "#fff", fontFamily: "'Inter', 'DM Sans', sans-serif" }}>
-      <Navbar />
+    <div style={{ minHeight: "100vh", background: "#06060c", color: "#fff", fontFamily: "'Inter', 'DM Sans', sans-serif", position: "relative", overflow: "hidden" }}>
+      
+      {/* Animated Background Orbs */}
+      <div style={{ position: "absolute", top: "-10%", left: "-5%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(0,0,0,0) 70%)", filter: "blur(60px)", zIndex: 0, animation: "float 10s infinite alternate ease-in-out" }} />
+      <div style={{ position: "absolute", bottom: "-20%", right: "-10%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(0,0,0,0) 70%)", filter: "blur(60px)", zIndex: 0, animation: "float 12s infinite alternate-reverse ease-in-out" }} />
 
-      {/* ── Page Layout ── */}
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px 80px" }}>
+      <style>{`
+        @keyframes float {
+          0% { transform: translate(0px, 0px) scale(1); }
+          100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+        @keyframes pulse-glow {
+          0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(52,211,153,0); }
+          100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+        }
+        @keyframes dash {
+          to { stroke-dashoffset: -20; }
+        }
+        .premium-card {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.06);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .premium-hover:hover {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.12);
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .tab-btn {
+          position: relative;
+        }
+        .tab-btn::after {
+          content: ''; position: absolute; bottom: -8px; left: 0; width: 100%; height: 3px; border-radius: 3px;
+          background: linear-gradient(90deg, #6366f1, #c084fc);
+          transform: scaleX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active::after {
+          transform: scaleX(1);
+        }
+      `}</style>
 
-        {/* ── Welcome Header ── */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 20, marginBottom: 36 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-              <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16 }}>
+      <div style={{ position: "relative", zIndex: 10 }}>
+        <Navbar />
+
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "40px 24px 100px" }}>
+          
+          {/* ── Header Section ── */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 20, marginBottom: 48 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+              <div style={{ width: 64, height: 64, borderRadius: 20, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 24, boxShadow: "0 10px 30px rgba(99,102,241,0.4)", border: "2px solid rgba(255,255,255,0.1)" }}>
                 {initials}
               </div>
               <div>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>Welcome back 👋</p>
-                <h1 style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 800, color: "#fff" }}>{currentUser?.name || "User"}</h1>
+                <p style={{ fontSize: 14, color: "#a5b4fc", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>Workspace</p>
+                <h1 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+                  Welcome back, {currentUser?.name?.split(" ")[0] || "User"}
+                </h1>
               </div>
             </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", fontSize: 13, color: "#34d399", fontWeight: 600 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34d399", animation: "pulse 1.5s infinite", display: "inline-block" }} />
-              All Systems Online
+            
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 14, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", backdropFilter: "blur(10px)" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399", animation: "pulse-glow 2s infinite" }} />
+              <span style={{ fontSize: 13, color: "#34d399", fontWeight: 700 }}>Engine Online</span>
             </div>
           </div>
-        </div>
 
-        {/* ── Stats Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
-          {stats.map((s, i) => (
-            <div key={i} style={{ background: s.bg, border: `1px solid ${s.color}25`, borderRadius: 18, padding: "20px 22px", transition: "all 0.3s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${s.color}20`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 22 }}>{s.icon}</span>
-                <svg style={{ width: 14, height: 14, color: s.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </div>
-              <p style={{ fontSize: "clamp(22px, 3vw, 30px)", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.val}</p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 6, fontWeight: 500 }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Tab Navigation ── */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, marginBottom: 28, width: "fit-content" }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, transition: "all 0.2s",
-                background: activeTab === tab.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent",
-                color: activeTab === tab.id ? "#fff" : "rgba(255,255,255,0.5)",
-                boxShadow: activeTab === tab.id ? "0 4px 20px rgba(99,102,241,0.3)" : "none",
-              }}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span style={{ padding: "2px 8px", borderRadius: 99, background: activeTab === tab.id ? "rgba(255,255,255,0.2)" : "rgba(99,102,241,0.2)", fontSize: 11, fontWeight: 700, color: activeTab === tab.id ? "#fff" : "#a5b4fc" }}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Create Tab ── */}
-        {activeTab === "create" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
-            {/* Upload Card */}
-            <div style={{ gridColumn: "1 / -1", maxWidth: 680 }}>
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "clamp(20px, 3vw, 32px)", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}>⚡</div>
-                  <div>
-                    <h2 style={{ fontSize: 20, fontWeight: 800 }}>Create New Podcast</h2>
-                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Upload a PDF and let AI do the rest</p>
+          {/* ── Stats Grid ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
+            {stats.map((s, i) => (
+              <div key={i} className="premium-card" style={{ background: s.bg, borderRadius: 24, padding: "24px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.04, transform: "rotate(15deg)" }}>{s.icon}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: s.color, boxShadow: `0 4px 12px ${s.color}30` }}>
+                    {s.icon}
                   </div>
+                  <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{s.label}</p>
+                </div>
+                <p style={{ fontSize: 36, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>{s.val}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Segmented Tabs ── */}
+          <div style={{ display: "flex", gap: 30, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 8, marginBottom: 36, overflowX: "auto", scrollbarWidth: "none" }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
+                style={{
+                  background: "none", border: "none", padding: "10px 4px", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "color 0.2s", whiteSpace: "nowrap",
+                  color: activeTab === tab.id ? "#fff" : "rgba(255,255,255,0.4)"
+                }}
+              >
+                <span style={{ opacity: activeTab === tab.id ? 1 : 0.5 }}>{tab.icon}</span>
+                {tab.label}
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span style={{ padding: "2px 8px", borderRadius: 99, background: activeTab === tab.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.1)", fontSize: 11, color: "#fff", marginLeft: 4 }}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Create Tab ── */}
+          {activeTab === "create" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr lg:350px", gap: 32, alignItems: "start" }}>
+              <div className="premium-card" style={{ borderRadius: 32, padding: "clamp(24px, 4vw, 48px)" }}>
+                <div style={{ textAlign: "center", marginBottom: 32 }}>
+                  <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>✨</div>
+                  <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>AI Generation Engine</h2>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 15 }}>Upload your document and let our neural network create a studio-quality podcast.</p>
                 </div>
                 <UploadPDF onSuccess={handleUploadSuccess} />
               </div>
 
-              {/* Quick Tips */}
-              <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: 18, padding: "20px 24px" }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#a5b4fc", marginBottom: 14 }}>💡 Tips for Best Results</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-                  {[
-                    { icon: "📝", text: "Text-based PDFs convert faster than scanned ones" },
-                    { icon: "📏", text: "10–50 page PDFs yield the best podcast length" },
-                    { icon: "🌐", text: "English PDFs currently produce the highest quality audio" },
-                  ].map((tip, i) => (
-                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <span style={{ fontSize: 16, flexShrink: 0 }}>{tip.icon}</span>
-                      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.55 }}>{tip.text}</p>
-                    </div>
-                  ))}
+              {/* Pro Tips Sidebar */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="premium-card" style={{ borderRadius: 24, padding: 24, background: "linear-gradient(180deg, rgba(99,102,241,0.05), transparent)" }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "#a5b4fc", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>💡</span> Pro Tips
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {[
+                      { title: "Native Text PDFs", desc: "For the absolute best AI comprehension, upload PDFs containing selectable text rather than scanned images." },
+                      { title: "Optimal Length", desc: "Documents under 50 pages generate the most engaging, concise podcast formats." },
+                      { title: "Language Support", desc: "The AI currently excels at English parsing, with more languages rolling out soon." }
+                    ].map((tip, i) => (
+                      <div key={i} style={{ paddingLeft: 16, borderLeft: "2px solid rgba(99,102,241,0.3)" }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 4 }}>{tip.title}</p>
+                        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>{tip.desc}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ── Library Tab ── */}
-        {activeTab === "library" && (
-          <div>
-            {history.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "80px 24px", background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 24 }}>
-                <div style={{ fontSize: 56, marginBottom: 16 }}>🎧</div>
-                <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>No Podcasts Yet</h3>
-                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 28 }}>Upload your first PDF to get started</p>
-                <button onClick={() => setActiveTab("create")} style={{ padding: "13px 28px", borderRadius: 14, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontWeight: 600, fontSize: 15, cursor: "pointer", boxShadow: "0 0 30px rgba(99,102,241,0.35)" }}>
-                  ⚡ Create First Podcast
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {history.map((item, index) => (
-                  <div key={index}>
-                    <div style={{ background: "rgba(255,255,255,0.02)", border: expandedItem === index ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: "18px 22px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", transition: "all 0.3s" }}
-                      onMouseEnter={(e) => { if (expandedItem !== index) { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
-                      onMouseLeave={(e) => { if (expandedItem !== index) { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}}
-                    >
-                      {/* Icon */}
-                      <div style={{ width: 46, height: 46, borderRadius: 14, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎧</div>
-
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: 160 }}>
-                        <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{item.title}</p>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{item.time}</p>
-                      </div>
-
-                      {/* Status badge */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 99, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", fontSize: 12, fontWeight: 600, color: "#34d399", flexShrink: 0 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", display: "inline-block" }} />
-                        Ready
-                      </div>
-
-                      {/* Actions */}
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          onClick={() => setExpandedItem(expandedItem === index ? null : index)}
-                          style={{ padding: "9px 18px", borderRadius: 10, background: expandedItem === index ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)", border: expandedItem === index ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.1)", color: expandedItem === index ? "#a5b4fc" : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" }}
-                        >
-                          {expandedItem === index ? "▲ Close" : "▼ View Script"}
-                        </button>
-                        <button
-                          onClick={() => deleteItem(index)}
-                          style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", flexShrink: 0 }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expanded script view */}
-                    {expandedItem === index && (
-                      <div style={{ background: "rgba(8,8,16,0.9)", border: "1px solid rgba(99,102,241,0.2)", borderTop: "none", borderRadius: "0 0 18px 18px", padding: "20px 22px", marginTop: -2 }}>
-                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                          <span style={{ fontSize: 14, color: "#a5b4fc", fontWeight: 700 }}>📝 Podcast Script</span>
-                          
-                          {audioUrls[index] ? (
-                            <audio src={audioUrls[index]} controls autoPlay style={{ height: 34, accentColor: "#6366f1", flex: 1, minWidth: 200, maxWidth: 400 }} />
-                          ) : (
-                            <button
-                              onClick={() => handlePlayAudio(index, item.script, item.lang)}
-                              disabled={loadingAudioIndex === index || !item.script}
-                              style={{ padding: "8px 16px", borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontSize: 13, fontWeight: 600, cursor: (loadingAudioIndex === index || !item.script) ? "not-allowed" : "pointer", opacity: (loadingAudioIndex === index || !item.script) ? 0.7 : 1, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 0 15px rgba(99,102,241,0.3)" }}
-                            >
-                              {loadingAudioIndex === index ? (
-                                <>
-                                  <svg style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} viewBox="0 0 24 24" fill="none">
-                                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                  </svg>
-                                  Loading Audio...
-                                </>
-                              ) : "▶ Listen to Audio"}
-                            </button>
-                          )}
-                        </div>
-                        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 280, overflowY: "auto" }}>
-                          {item.script || "No script content saved for this podcast."}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Analytics Tab ── */}
-        {activeTab === "analytics" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-
-            {/* AI Processing Stats */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: "28px" }}>
-              <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 24 }}>⚙️ AI Quality Metrics</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {[
-                  { label: "Audio Clarity", val: 98, color: "#6366f1" },
-                  { label: "Script Accuracy", val: 95, color: "#8b5cf6" },
-                  { label: "Voice Naturalness", val: 93, color: "#c084fc" },
-                  { label: "Processing Speed", val: 99, color: "#34d399" },
-                ].map((metric, i) => (
-                  <div key={i}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>{metric.label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: metric.color }}>{metric.val}%</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)" }}>
-                      <div style={{ height: "100%", width: `${metric.val}%`, borderRadius: 99, background: `linear-gradient(90deg, ${metric.color}, ${metric.color}cc)`, boxShadow: `0 0 10px ${metric.color}50`, transition: "width 1s ease" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Activity */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: "28px" }}>
-              <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 24 }}>📅 Recent Activity</h3>
+          {/* ── Library Tab (Grid Layout) ── */}
+          {activeTab === "library" && (
+            <div>
               {history.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.3)" }}>
-                  <span style={{ fontSize: 36, display: "block", marginBottom: 12 }}>📭</span>
-                  <p style={{ fontSize: 14 }}>No activity yet</p>
+                <div className="premium-card" style={{ textAlign: "center", padding: "100px 24px", borderRadius: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, marginBottom: 24 }}>🎧</div>
+                  <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Your library is empty</h3>
+                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 32, maxWidth: 400 }}>All your generated podcasts will appear here. Ready to create your first masterpiece?</p>
+                  <button onClick={() => setActiveTab("create")} style={{ padding: "14px 32px", borderRadius: 16, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontWeight: 600, fontSize: 15, cursor: "pointer", boxShadow: "0 10px 30px rgba(99,102,241,0.4)", transition: "transform 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={(e)=>e.currentTarget.style.transform="none"}>
+                    Create Podcast
+                  </button>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {history.slice(0, 5).map((item, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>🎧</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</p>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{item.time}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
+                  {history.map((item, index) => (
+                    <div key={index} className="premium-card premium-hover" style={{ borderRadius: 24, padding: 24, transition: "all 0.3s", display: "flex", flexDirection: "column" }}>
+                      
+                      {/* Header */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                          🎧
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(52,211,153,0.1)", color: "#34d399", fontSize: 11, fontWeight: 700 }}>Ready</span>
+                          <button onClick={() => deleteItem(index)} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete">🗑️</button>
+                        </div>
                       </div>
-                      <span style={{ fontSize: 11, color: "#34d399", fontWeight: 600 }}>✓ Done</span>
+
+                      {/* Title & Meta */}
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, lineHeight: 1.3 }}>{item.title}</h3>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 500 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>🕒 {item.time}</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>📄 {item.lang || "en"}</span>
+                        </div>
+                      </div>
+
+                      <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", margin: "20px 0" }} />
+
+                      {/* Actions */}
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <button onClick={() => handlePlayAudio(index, item.script, item.lang)} style={{ flex: 1, padding: "10px", borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.1)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
+                          {loadingAudioIndex === index ? (
+                            <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</span>
+                          ) : "▶ Listen"}
+                        </button>
+                        
+                        <button onClick={() => setExpandedItem(expandedItem === index ? null : index)} style={{ flex: 1, padding: "10px", borderRadius: 12, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#a5b4fc", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(99,102,241,0.1)"} onMouseLeave={(e)=>e.currentTarget.style.background="transparent"}>
+                          {expandedItem === index ? "Hide Script" : "View Script"}
+                        </button>
+                      </div>
+
+                      {/* Script Expander */}
+                      {expandedItem === index && (
+                        <div style={{ marginTop: 16, padding: 16, borderRadius: 12, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                          <p style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc", marginBottom: 8 }}>GENERATED SCRIPT</p>
+                          <div style={{ maxHeight: 200, overflowY: "auto", paddingRight: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                            {item.script}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Audio Player */}
+                      {audioUrls[index] && (
+                        <div style={{ marginTop: 16, padding: 12, borderRadius: 12, background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)" }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "#fff", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", animation: "pulse-glow 2s infinite" }} />
+                            AUDIO READY
+                          </p>
+                          <audio controls src={audioUrls[index]} style={{ width: "100%", height: 36, outline: "none" }} autoPlay />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
+          )}
 
-            {/* Plan Info */}
-            <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 22, padding: "28px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                <span style={{ fontSize: 24 }}>⭐</span>
-                <h3 style={{ fontSize: 17, fontWeight: 800 }}>Pro Plan</h3>
+          {/* ── Analytics Tab ── */}
+          {activeTab === "analytics" && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+              
+              <div className="premium-card" style={{ padding: 32, borderRadius: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
+                  <span style={{ fontSize: 24 }}>📈</span>
+                  <h3 style={{ fontSize: 20, fontWeight: 800 }}>Quality Metrics</h3>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {[
+                    { label: "Speech Naturalness", val: 94, color: "#34d399" },
+                    { label: "Text Extraction", val: 88, color: "#60a5fa" },
+                    { label: "Processing Speed", val: 97, color: "#c084fc" },
+                  ].map((m, i) => (
+                    <div key={i}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{m.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: m.color }}>{m.val}%</span>
+                      </div>
+                      <div style={{ width: "100%", height: 8, background: "rgba(255,255,255,0.05)", borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{ width: `${m.val}%`, height: "100%", background: m.color, borderRadius: 99, boxShadow: `0 0 10px ${m.color}80` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-                {[
-                  { label: "PDFs Used", val: `${history.length} / ∞`, per: "Unlimited" },
-                  { label: "Storage", val: "2.4 GB / 50 GB", per: "48% free" },
-                  { label: "Voices", val: "1 / 10", per: "9 available" },
-                ].map((u, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}>
-                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{u.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#a5b4fc" }}>{u.val}</span>
+
+              <div className="premium-card" style={{ padding: 32, borderRadius: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
+                  <span style={{ fontSize: 24 }}>💳</span>
+                  <h3 style={{ fontSize: 20, fontWeight: 800 }}>Plan & Usage</h3>
+                </div>
+                
+                <div style={{ padding: 24, borderRadius: 16, background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)", marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase" }}>Current Plan</span>
+                    <span style={{ padding: "4px 10px", background: "#6366f1", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 8 }}>PRO</span>
                   </div>
-                ))}
-              </div>
-              <button style={{ width: "100%", padding: "12px", borderRadius: 12, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", boxShadow: "0 0 24px rgba(99,102,241,0.3)", transition: "all 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-              >
-                🚀 Upgrade to Team Plan
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "#fff", marginBottom: 4 }}>Unlimited</p>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>You have unlimited podcast generations.</p>
+                </div>
 
-      {/* Inline keyframes */}
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}</style>
+                <button style={{ width: "100%", padding: 14, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.1)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
+                  Manage Billing
+                </button>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 }
