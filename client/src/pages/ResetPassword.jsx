@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "super-secret-podcast-api-key-2026";
 
 function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -36,6 +37,7 @@ function ResetPassword() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": API_KEY,
         },
         body: JSON.stringify({ password }),
       });
