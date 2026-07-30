@@ -63,26 +63,37 @@ function Signup() {
         });
         const userInfo = await res.json();
 
-        const googleUser = {
-          name: userInfo.name,
-          email: userInfo.email,
-          avatar: userInfo.picture,
-          provider: "google",
-        };
+        // Send Google user data to our backend
+        const backendRes = await fetch(`${API_URL}/api/auth/google`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+          body: JSON.stringify({
+            name: userInfo.name,
+            email: userInfo.email,
+            avatar: userInfo.picture,
+          }),
+        });
 
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const alreadyExist = users.find((u) => u.email === googleUser.email);
-        if (!alreadyExist) {
-          users.push(googleUser);
-          localStorage.setItem("users", JSON.stringify(users));
+        const data = await backendRes.json();
+
+        if (!backendRes.ok || !data.success) {
+          alert(data.message || "Google signup failed on server");
+          return;
         }
 
-        localStorage.setItem("currentUser", JSON.stringify(googleUser));
+        // Store JWT token and user securely in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("currentUser", JSON.stringify(data));
+
         setShowPopup(true);
         setTimeout(() => {
           navigate("/dashboard");
         }, 1500);
       } catch (err) {
+        console.error(err);
         alert("Google login failed. Please try again.");
       }
     },

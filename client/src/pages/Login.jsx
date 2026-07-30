@@ -57,23 +57,34 @@ function Login() {
         });
         const userInfo = await res.json();
 
-        const googleUser = {
-          name: userInfo.name,
-          email: userInfo.email,
-          avatar: userInfo.picture,
-          provider: "google",
-        };
+        // Send Google user data to our backend
+        const backendRes = await fetch(`${API_URL}/api/auth/google`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+          body: JSON.stringify({
+            name: userInfo.name,
+            email: userInfo.email,
+            avatar: userInfo.picture,
+          }),
+        });
 
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const alreadyExist = users.find((u) => u.email === googleUser.email);
-        if (!alreadyExist) {
-          users.push(googleUser);
-          localStorage.setItem("users", JSON.stringify(users));
+        const data = await backendRes.json();
+
+        if (!backendRes.ok || !data.success) {
+          alert(data.message || "Google login failed on server");
+          return;
         }
 
-        localStorage.setItem("currentUser", JSON.stringify(googleUser));
+        // Store JWT token and user securely in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("currentUser", JSON.stringify(data));
+
         navigate("/dashboard");
       } catch (err) {
+        console.error(err);
         alert("Google login failed. Please try again.");
       }
     },
@@ -83,11 +94,7 @@ function Login() {
   });
 
   function handleForgotPassword() {
-    if (!email) {
-      alert("Please enter your email address first, then click Forgot Password.");
-      return;
-    }
-    alert(`A password reset link would be sent to: ${email}\n\n(Password reset via email is coming soon!)`);
+    navigate("/forgot-password");
   }
 
   return (
