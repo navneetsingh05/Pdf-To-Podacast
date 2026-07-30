@@ -58,30 +58,10 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ─── CORS ──────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : [];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (curl, Postman, mobile apps)
-      if (!origin) return callback(null, true);
-
-      // In development: allow any localhost port
-      if (/^http:\/\/localhost(:\d+)?$/.test(origin)) {
-        return callback(null, true);
-      }
-
-      // In production: allow only explicitly listed origins
-      if (ALLOWED_ORIGINS.includes(origin)) {
-        return callback(null, true);
-      }
-
-      callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
